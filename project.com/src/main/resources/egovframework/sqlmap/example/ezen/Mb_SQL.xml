@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="memberSpace">
+
+	<typeAlias  alias="pageVO" type="ezen.service.PageVO"/>
+	<typeAlias  alias="memberVO" type="ezen.service.MemberVO"/>
+	
+	
+	<insert id="member.insert">  
+		INSERT INTO MEMBER
+			( U_ID, U_PWD, U_NAME, U_GENDER, U_BIRTH, U_PHONE, U_POSTNUM, U_ADDR1, U_ADDR2, RDATE, GRP )
+		VALUES
+			( #id#
+			, #pwd#
+			, #name#
+			, #gender#
+			, #birth#
+			, #phone#
+			, #postnum#
+			, #addr1#
+			, #addr2#
+			, sysdate 
+			, #grp#)
+	</insert>
+	
+	<select id="member.idcheck" resultClass="java.lang.Integer">
+		SELECT COUNT(*) 
+		FROM MEMBER
+		WHERE U_ID = #id#  
+	</select>
+	
+	
+	<select id="member.selectList" parameterClass="pageVO" resultClass="egovMap">
+		SELECT a.* FROM (
+			SELECT rownum rn, b.* FROM (
+				SELECT 
+					U_ID id, 
+					U_NAME name, 
+					decode(U_GENDER, 'M', '남', 'F', '여') gender, 
+					to_char(U_BIRTH, 'yyyy-mm-dd') birth, 
+					round(months_between(SYSDATE, U_BIRTH)/12 + 1) age,
+					to_char(RDATE, 'yyyy-mm-dd') rdate 
+				FROM MEMBER
+				WHERE 1=1
+					<isEqual prepend="AND" property="searchCondition" compareValue="id">
+						U_ID LIKE '%' || #searchKeyword# || '%'
+					</isEqual>
+					<isEqual prepend="AND" property="searchCondition" compareValue="name">
+						U_NAME LIKE '%' || #searchKeyword# || '%'
+					</isEqual>  
+				ORDER BY rdate DESC ) B 
+			) A
+		 WHERE RN > #firstIndex# AND RN <![CDATA[<=]]> #lastIndex# 
+	</select>
+	
+	<select id="member.countAllList" parameterClass="pageVO" resultClass="java.lang.Integer">
+		SELECT COUNT(*) totcnt
+		FROM MEMBER
+		WHERE 1=1
+			<isEqual prepend="AND" property="searchCondition" compareValue="id">
+				U_ID LIKE '%' || #searchKeyword# || '%'
+			</isEqual>
+			<isEqual prepend="AND" property="searchCondition" compareValue="name">
+				U_NAME LIKE '%' || #searchKeyword# || '%'
+			</isEqual>  
+	</select>
+	
+	<select id="get.postnumList" resultClass="egovMap">
+		SELECT postnum, sido, sigun, dong, ri, bunji, other
+		FROM  POST
+		WHERE  dong Like '%' || '$dong$' || '%'
+		<!--
+		$$ -> parameter의 형태를 인식하지 못하여 String 으로 매핑 되지 않아 스트링처리 해주기 위해 ''넣어줘야함
+		## -> parameter의 형태(dong의 경우 String)를 자동인식 
+		WHERE dong List '%' || #dong# || '%'
+		 -->
+		OR ri Like '%' || '$dong$' || '%'
+	</select>
+	
+	<!-- login -->
+	<select id="login.check" parameterClass="java.util.HashMap" resultClass="java.lang.Integer">
+		SELECT count(*) 
+		FROM MEMBER
+		WHERE U_ID = #id# AND U_PWD = #pwd#
+	</select>
+
+</sqlMap>

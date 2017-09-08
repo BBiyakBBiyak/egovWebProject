@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="DataBoardSpace">
+
+	<typeAlias  alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+	<typeAlias  alias="pageVO" type="ezen.service.PageVO"/>
+	<typeAlias  alias="boardVO" type="ezen.service.BoardVO"/>
+	
+	<insert id="dataBoard.insert" parameterClass="boardVO">
+		INSERT INTO DATABOARD
+			( UNQ, TITLE, PWD, NAME, CONTENT, HIT, RDATE, FiLENAME, BOARDID )
+		VALUES
+			( dataBoard_unq.nextval
+			, #title#
+			, #pwd#
+			, #name#
+			, #content#
+			, 0
+			, sysdate
+			, #filename#
+			, #boardId# )
+	</insert>
+	
+	<update id="dataBoard.update">
+		UPDATE dataBoard SET
+			 TITLE=#title#
+			 , NAME=#name#
+			 , CONTENT=#content#
+			 , FILENAME=FILENAME || #filename#
+		WHERE UNQ=#unq#
+	</update>
+	
+	<!-- 파일하나씩 삭제  -->
+	<update id="dataBoard.deleteFile">
+		UPDATE dataBOARD 
+			SET FILENAME = replace(DBMS_LOB.SUBSTR(FILENAME, 500), #filename#, '')
+			WHERE UNQ = #unq#
+	</update>
+	
+	<update id="dataBoard.updateHit">
+		UPDATE dataBoard
+			SET HIT = HIT + 1
+			WHERE UNQ=#unq#
+	</update>
+	
+	<select id="dataBoard.select" resultClass="boardVO">
+		SELECT
+			UNQ, TITLE, PWD, NAME, CONTENT, HIT, to_char(RDATE, 'yyyy-mm-dd') RDATE, FILENAME
+		FROM
+			dataBoard 
+		WHERE unq=#unq#
+	</select>
+		
+	<select id="dataBoard.getBoard" resultClass="boardVO">
+		SELECT
+			UNQ, TITLE, PWD, NAME, CONTENT, HIT, to_char(RDATE, 'yyyy-mm-dd') RDATE, FILENAME
+		FROM
+			dataBoard 
+		WHERE BOARDID=#boardId#
+	</select>	
+	
+	<select id="dataBoard.selectAllList" parameterClass="pageVO" resultClass="egovMap">
+		SELECT A.* FROM (
+			SELECT ROWNUM RN, B.* FROM (
+				SELECT
+					UNQ, TITLE, PWD, NAME, CONTENT, HIT, to_char(RDATE, 'yyyy-mm-dd') rdate, DBMS_LOB.SUBSTR( FILENAME, 500) FILENAME
+				FROM
+					dataBoard
+				WHERE 1=1
+					<isEqual prepend="AND" property="searchCondition" compareValue="title">
+						title LIKE '%' || #searchKeyword# || '%'
+					</isEqual>
+					<isEqual prepend="AND" property="searchCondition" compareValue="name">
+						name LIKE '%' || #searchKeyword# || '%'
+					</isEqual>  
+				ORDER BY UNQ DESC ) B 
+			) A
+		 WHERE RN >= #firstIndex# AND RN <![CDATA[<=]]> #lastIndex# 
+	</select>
+	
+	<select id="dataBoard.countAllList" parameterClass="pageVO" resultClass="java.lang.Integer">
+			SELECT COUNT(*) totcnt
+			FROM dataBoard
+			WHERE 1=1
+				<isEqual prepend="AND" property="searchCondition" compareValue="title">
+					title LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+				<isEqual prepend="AND" property="searchCondition" compareValue="name">
+					name LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+	</select>
+	
+	
+</sqlMap>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="ResearchSpace">
+
+	<typeAlias  alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+	<typeAlias  alias="pageVO" type="ezen.service.PageVO"/>
+	<typeAlias  alias="researchVO" type="ezen.service.ResearchVO"/>
+	
+	<!-- MainTable Insert -->
+	<insert id="rschMain.insert">
+		INSERT INTO RSCHMAIN
+			( UNQ, MCD, TITLE, SDATE, EDATE, USE, RDATE )
+		VALUES
+			( RSCH_UNQ.nextval
+			, (	SELECT NVL(MAX(MCD), 1000)+1 as MCD FROM RSCHMAIN )
+			, #title#
+			, #sdate#
+			, #edate#	
+			, #use#
+			, sysdate )
+	</insert>
+	<!-- SubTable Insert -->
+	<insert id="rschSub.insert">
+		INSERT INTO RSCHSUB
+			( UNQ, SCD, COMM, CNT )
+		VALUES
+			( RSCH_UNQ.nextval
+			, ( SELECT fn_setSCD() FROM DUAL)
+			, #content#
+			, 0 )
+	</insert>
+	
+	<!-- MainTable SelectList -->
+	<select id="rschList.select" parameterClass="pageVO" resultClass="egovMap">
+		SELECT A.* FROM (
+			SELECT ROWNUM RN, B.* FROM (
+				 SELECT UNQ, MCD, TITLE, 
+				 to_char(SDATE,'yyyy-mm-dd') SDATE, 
+				 to_char(EDATE, 'yyyy-mm-dd') EDATE, 
+				 USE, RDATE FROM RSCHMAIN
+				 WHERE 1=1
+				 <isEqual prepend="AND" property="searchCondition" compareValue="title">
+					title LIKE '%' || #searchKeyword# || '%'
+				 </isEqual>
+				 <isEqual prepend="AND" property="searchCondition" compareValue="use">
+					USE LIKE '%' || #searchKeyword# || '%'
+				 </isEqual>  
+				 ORDER BY RDATE DESC
+			) B	
+		) A
+		WHERE RN >= #firstIndex# AND RN <![CDATA[<=]]> #lastIndex# 	
+	</select>
+	
+	<!-- SubTable SelectList -->
+	<select id="rschSubList.select" resultClass="egovMap">
+		select a.* from(
+			select rownum rn, b.* from (
+		        select m.title, s.unq, s.scd, s.comm
+		        from rschMain m
+		        join rschSub s
+		        on scd like #mcd#||'%'
+		        where mcd = #mcd#
+   			 order by unq asc ) b
+		) a
+	</select>
+	
+	<select id="rschList.count" parameterClass="pageVO" resultClass="java.lang.Integer">
+		SELECT COUNT(*) totcnt
+			FROM RSCHMAIN
+			WHERE 1=1
+				<isEqual prepend="AND" property="searchCondition" compareValue="title">
+					title LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+				<isEqual prepend="AND" property="searchCondition" compareValue="use">
+					USE LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+	</select>
+	
+	<select id="rschUseList.select" resultClass="egovMap">
+		SELECT 
+			UNQ, MCD, TITLE 
+		FROM 
+			RSCHMAIN
+		WHERE 
+			USE='Y' 
+		AND 
+			(SELECT TO_DATE(SYSDATE) FROM DUAL) between SDATE and EDATE
+	</select>
+	
+</sqlMap>

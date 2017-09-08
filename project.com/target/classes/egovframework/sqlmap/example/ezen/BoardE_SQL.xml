@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+
+<sqlMap namespace="BoardESpace">
+
+	<typeAlias  alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+	<typeAlias  alias="searchVO" type="egovframework.example.sample.service.SampleDefaultVO"/>
+	<typeAlias  alias="boardEVO" type="ezen.service.BoardEVO"/>
+
+	<insert id="boardE.insert">
+		INSERT INTO boardE1 
+			( unq
+			  , title
+			  , pwd
+			  , name
+			  , content
+			  , hit
+			  , rdate
+			  , udate )
+		VALUES ( boardE1_seq.nextval
+			  , #title#
+			  , #pwd#
+			  , #name#
+			  , #content#
+			  , '0'
+			  , sysdate
+			  , sysdate )
+	</insert>
+	
+	<insert id="boardE.insertComm">
+		INSERT INTO boardE2 
+			( unq
+			  , comm
+			  , pwd
+			  , fid
+			  , writer )
+		VALUES ( boardE2_seq.nextval
+			  , #comm#
+			  , #pwd#
+			  , #unq#
+			  , #writer# )
+	</insert>
+	
+	<update id="boardE.update">
+		UPDATE boardE1 SET
+			 TITLE=#title#
+			 , NAME=#name#
+			 , CONTENT=#content#
+		WHERE UNQ=#unq#
+	</update>
+	
+	<update id="boardE.updateHit">
+		UPDATE boardE1 SET HIT=HIT+1
+		WHERE UNQ=#unq#
+	</update>
+	
+	<select id="boardE.pwdCheck" resultClass="java.lang.Integer">
+		SELECT COUNT(*) 
+		FROM boardE2
+		WHERE unq=#unq# AND pwd=#pwd# 		
+	</select>
+	
+	<update id="boardE.updateComm">
+		UPDATE boardE2 
+			SET comm=#comm#
+			 , writer=#writer#
+		WHERE unq=#unq#
+	</update>
+	
+	<delete id="boardE.delete">
+		DELETE FROM boardE1 
+			WHERE UNQ=#unq#
+	</delete>
+	
+	<delete id="boardE.deleteComm">
+		DELETE FROM boardE2
+			WHERE unq=#unq#
+	</delete>
+	
+	
+	<select id="boardE.selectList" resultClass="egovMap">
+		SELECT A.* FROM (
+			SELECT ROWNUM RN, B.* FROM (
+				SELECT
+					unq, title, pwd, name, content, hit, to_char(rdate, 'yyyy-mm-dd') rdate, to_char(udate, 'yyyy-mm-dd') udate
+				FROM
+					boardE1
+				WHERE 1=1
+					<isEqual prepend="AND" property="searchCondition" compareValue="title">
+						title LIKE '%' || #searchKeyword# || '%'
+					</isEqual>
+					<isEqual prepend="AND" property="searchCondition" compareValue="name">
+						name LIKE '%' || #searchKeyword# || '%'
+					</isEqual>  
+				ORDER BY rdate DESC ) B 
+			) A
+		 WHERE RN >= #firstIndex# AND RN <![CDATA[<=]]> #lastIndex# 
+		
+	</select>
+	
+	<select id="boardE.cntList" resultClass="java.lang.Integer">
+		SELECT COUNT(*) totcnt
+		FROM boardE1
+		WHERE 1=1
+			<isEqual prepend="AND" property="searchCondition" compareValue="title">
+				title LIKE '%' || #searchKeyword# || '%'
+			</isEqual>
+			<isEqual prepend="AND" property="searchCondition" compareValue="name">
+				name LIKE '%' || #searchKeyword# || '%'
+			</isEqual>
+	</select>
+	
+	<select id="boardE.selected" resultClass="boardEVO">
+		SELECT unq, title, pwd, name, content, hit, to_char(rdate, 'yyyy-mm-dd') rdate, to_char(udate, 'yyyy-mm-dd') udate
+		FROM boardE1
+		WHERE unq = #unq#
+	</select>
+	
+	<select id="boardE.selectedComm" resultClass="boardEVO">
+		SELECT unq, fid, pwd, comm, writer
+		FROM boardE2
+		WHERE unq = #unq#
+	</select>
+	
+	
+	<select id="boardE.selectCommList" resultClass="egovMap">
+		SELECT A.* FROM (
+			SELECT ROWNUM RN, B.* FROM (
+				SELECT
+					unq, comm, pwd, fid, writer
+				FROM
+					boardE2
+				WHERE fid=#unq#
+				ORDER BY unq DESC ) B 
+			) A
+	</select>
+
+</sqlMap>
+
+
+
+
+
+
+

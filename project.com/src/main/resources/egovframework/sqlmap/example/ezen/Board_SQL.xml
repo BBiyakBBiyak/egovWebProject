@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap namespace="BoardSpace">
+
+	<typeAlias  alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+	<typeAlias  alias="pageVO" type="ezen.service.PageVO"/>
+	<typeAlias  alias="boardVO" type="ezen.service.BoardVO"/>
+ 
+	<insert id="board.insert">
+		INSERT INTO reBoard
+			( UNQ, FID, TITLE, PWD, NAME, CONTENT, THREAD, HIT, RDATE )
+		VALUES
+			( reBoard_UNQ.nextval
+			, (select DECODE(max(fid), '', 0, max(fid))+1 as fid from reboard)
+			, #title#
+			, #pwd#
+			, #name#
+			, #content#
+			, 'a'
+			, '0'
+			, sysdate )
+	</insert>
+	
+	<insert id="board.insertComm">
+		INSERT INTO reBoard
+			( UNQ, FID, TITLE, PWD, NAME, CONTENT, THREAD, HIT, RDATE )
+		VALUES
+			( reBoard_UNQ.nextval
+			, #fid#
+			, #title#
+			, #pwd#
+			, #name#
+			, #content#
+			, #thread#
+			, 0
+			, sysdate )
+	</insert>
+	
+	<select id="board.maxThread" resultClass="java.lang.String">
+			select max(thread) from reBoard
+			where fid = $fid$
+			and thread like '$thread$_'
+			and length(thread) = length('$thread$') + 1
+	</select>
+	
+	<update id="board.update">
+		UPDATE reBoard SET
+			 TITLE=#title#
+			 , NAME=#name#
+			 , CONTENT=#content#
+		WHERE UNQ=#unq#
+	</update>
+	
+	<update id="board.updateHit">
+		UPDATE reBoard SET
+			HIT=HIT+1
+			WHERE UNQ=#unqNum#
+	</update>
+	
+	<delete id="board.delete">
+		DELETE FROM reBoard 
+			WHERE UNQ=#unq#
+	</delete>
+	
+	<select id="board.recount" resultClass="java.lang.Integer">
+		select count(*) from reBoard 
+			where fid=$fid$
+			AND thread like '$thread$_'
+	</select>
+	
+	<!-- 
+	<delete id="board.delete2">
+		DELETE FROM reBoard
+			WHERE
+				(select count(*) from reBoard 
+					where fid=#fid# 
+						AND thread like '$thread$_')
+	
+	</delete>
+	-->
+	
+	<select id="board.select" resultClass="boardVO">
+		SELECT 
+			unq, fid, title, name, pwd, content, to_char(rdate, 'yyyy/mm/dd') rdate, thread
+		FROM
+			reBoard 
+		WHERE unq=#unq#
+	</select>
+		
+	<select id="board.selectAllList" parameterClass="pageVO" resultClass="egovMap">
+		SELECT A.* FROM (
+			SELECT ROWNUM RN, B.* FROM (
+				SELECT
+					unq, fid, title, name, to_char(rdate, 'yyyy/mm/dd') rdate, hit, thread
+				FROM
+					reBoard
+				WHERE 1=1
+					<isEqual prepend="AND" property="searchCondition" compareValue="title">
+						title LIKE '%' || #searchKeyword# || '%'
+					</isEqual>
+					<isEqual prepend="AND" property="searchCondition" compareValue="name">
+						name LIKE '%' || #searchKeyword# || '%'
+					</isEqual>  
+				ORDER BY fid DESC, thread ASC, rdate DESC ) B 
+			) A
+		 WHERE RN >= #firstIndex# AND RN <![CDATA[<=]]> #lastIndex# 
+		
+	</select>
+	
+	<select id="board.countAllList" parameterClass="pageVO" resultClass="java.lang.Integer">
+			SELECT COUNT(*) totcnt
+			FROM reBoard
+			WHERE 1=1
+				<isEqual prepend="AND" property="searchCondition" compareValue="title">
+					title LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+				<isEqual prepend="AND" property="searchCondition" compareValue="name">
+					name LIKE '%' || #searchKeyword# || '%'
+				</isEqual>
+	</select>
+	
+	<select id="board.pwdCheck" resultClass="java.lang.Integer">
+		SELECT COUNT(*) 
+		FROM reBoard
+		WHERE unq=#unq# AND pwd=#pwd# 		
+	</select>
+</sqlMap>
