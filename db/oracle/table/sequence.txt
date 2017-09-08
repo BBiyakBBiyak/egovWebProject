@@ -1,0 +1,11 @@
+DataBase Sequence
+
+BOARDE1_SEQ /* BOARDE MAIN TABLE UNQ SEQUENCE */
+
+BOARDE2_SEQ /* BOARDE COMMENT TABLE UNQ SEQUENCE */
+
+DATABOARD_UNQ /* 자료실테이블 시퀀스*/
+
+REBOARD_UNQ /* 댓글게시판(BOARD) 시퀀스*/
+
+RSCH_UNQ /* 설문조사 시퀀스 */
